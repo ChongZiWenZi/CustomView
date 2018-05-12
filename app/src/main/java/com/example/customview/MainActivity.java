@@ -65,7 +65,11 @@ public class MainActivity extends AppCompatActivity {
                     message.what = PROGRESS_CIRCLE_STARTING;
                     handler.sendMessage(message);
                 }else {
-                    Toast.makeText(MainActivity.this,"已经下载完了 不需要下载",Toast.LENGTH_SHORT).show();
+                    circleProgress.setStatus(CustomCircleProgress.Status.starting);
+                    //注意，当我们暂停时，同时还要移除消息，不然的话进度不会被停止
+                    Message message = Message.obtain();
+                    message.what = PROGRESS_CIRCLE_STARTING;
+                    handler.sendMessage(message);
                 }
             }
         });

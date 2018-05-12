@@ -50,10 +50,18 @@ public class CustomCircleProgress extends ProgressBar{
 
     private Bitmap drawBitmap,drawBitmapEnd;
 
-
+    private int height;
     private int width;
 
-    private int height;
+    private int dheight;
+
+    private int dwidth;
+
+
+
+    private int dwidth1;
+
+    private int height2;
     public CustomCircleProgress(Context context) {
         this(context,null);
     }
@@ -76,15 +84,18 @@ public class CustomCircleProgress extends ProgressBar{
         mReachedHeight = (int) array.getDimension(R.styleable.CustomCircleProgress_progress_reached_height, mReachedHeight);
         //圆的半径
         mRadius = (int) array.getDimension(R.styleable.CustomCircleProgress_circle_radius, mRadius);
-
         bitmap=array.getResourceId(R.styleable.CustomCircleProgress_imagers,R.mipmap.dowmload);
 
         bitmapEnd=array.getResourceId(R.styleable.CustomCircleProgress_imagersEnd,R.mipmap.more_book_next);
         /**
-         * 把图片资源转为Bitmap对象
+         * 把图片资源转为Bitmap对象 并获取bitmap的宽高 因为要把图绘制到控件中心
          */
         drawBitmap= BitmapFactory.decodeResource(context.getResources(),bitmap);
+        dwidth=drawBitmap.getWidth();
+        dheight=drawBitmap.getHeight();
         drawBitmapEnd=BitmapFactory.decodeResource(context.getResources(),bitmapEnd);
+        dwidth1=drawBitmapEnd.getWidth();
+        height2=drawBitmapEnd.getHeight();
         //最后不要忘了回收 TypedArray
         array.recycle();
 
@@ -133,14 +144,13 @@ public class CustomCircleProgress extends ProgressBar{
      */
     @Override
     protected synchronized void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         int widthMode = MeasureSpec.getMode(widthMeasureSpec);
         int heightMode = MeasureSpec.getMode(heightMeasureSpec);
         int widthSize = MeasureSpec.getSize(widthMeasureSpec);
         int heightSize = MeasureSpec.getSize(heightMeasureSpec);
         int paintHeight = Math.max(mReachedHeight, mDefaultHeight);//比较两数，取最大值
-        width=this.getWidth();
-        height=this.getHeight();
+
         if(heightMode != MeasureSpec.EXACTLY){
             //如果用户没有精确指出宽高时，我们就要测量整个View所需要分配的高度了，测量自定义圆形View设置的上下内边距+圆形view的直径+圆形描边边框的高度
             int exceptHeight = getPaddingTop() + getPaddingBottom() + mRadius*2 + paintHeight;
@@ -152,10 +162,9 @@ public class CustomCircleProgress extends ProgressBar{
             int exceptWidth = getPaddingLeft() + getPaddingRight() + mRadius*2 + paintHeight;
             widthMeasureSpec = MeasureSpec.makeMeasureSpec(exceptWidth, MeasureSpec.EXACTLY);
         }
-        width=this.getWidth();
-        height=this.getHeight();
+
         Log.e("End","width"+width+"---height"+height);
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+
     }
 
     @Override
@@ -173,29 +182,33 @@ public class CustomCircleProgress extends ProgressBar{
         //画笔平移到指定paddingLeft， getPaddingTop()位置
         canvas.translate(getPaddingLeft(),getPaddingTop());
         mPaint.setStyle(Paint.Style.STROKE);
-        //画默认圆(边框)的一些设置
-        mPaint.setColor(mDefaultColor);
-        mPaint.setStrokeWidth(mDefaultHeight);
-        canvas.drawCircle(mRadius,mRadius,mRadius,mPaint);
 
+        //获得控件宽高
+        final int paddingLeft=getPaddingLeft();
+        final int paddingRight=getPaddingRight();
+        final int paddingTop=getPaddingTop();
+        final int paddingBottom=getPaddingBottom();
+        width=(getWidth()-paddingLeft-paddingRight)/2;
+        height=(getHeight()-paddingBottom-paddingTop)/2;
         //画进度条的一些设置
         mPaint.setColor(mReachedColor);
         mPaint.setStrokeWidth(mReachedHeight);
+
         //根据进度绘制圆弧
         float sweepAngle = getProgress() * 1.0f / getMax() * 360;
-        canvas.drawArc(new RectF(0, 0, mRadius * 2, mRadius *2), -90, sweepAngle, false, mPaint);//drawArc：绘制圆弧
+        //这里的RectF是确定一个矩形而圆则在矩形之中  圆形则是根据矩形的左上角和右下角的坐标xy轴相减若俩个角的xy轴相减的结果相等就是圆 否则是椭圆
+        canvas.drawArc(new RectF(width-dwidth/2,height-dheight/2,width+mRadius,height+mRadius), -90, sweepAngle, false, mPaint);//drawArc：绘制圆弧
+        //画默认圆(边框)的一些设置
+        mPaint.setColor(mDefaultColor);
+        mPaint.setStrokeWidth(mDefaultHeight);
+        //drawCircles()是以前俩个参数为中心点绘制
+        canvas.drawCircle(getWidth()/2,getHeight()/2,mRadius,mPaint);
 
-        //有了path之后就可以在onDraw中绘制三角形的End和Starting状态了
          if(mStatus == Status.start||mStatus == Status.starting||mStatus == Status.Stop){//开始
-            float imageLeft=width/2;
-            float imageTop=height/2;
-             Log.e("start","imageLeft"+imageLeft+"---imageTop"+imageTop);
-           canvas.drawBitmap(drawBitmap,imageLeft,imageTop,mPaint);
+             //drawBitmap()是以第2个和第3个确定左上角坐标绘制
+           canvas.drawBitmap(drawBitmap,width-dwidth/2,height-dheight/2,mPaint);
         }  else {//结束
-             float imageLeft=width/2;
-             float imageTop=height/2;
-             Log.e("End","imageLeft"+imageLeft+"---imageTop"+imageTop);
-             canvas.drawBitmap(drawBitmapEnd,imageLeft,imageTop,mPaint);
+             canvas.drawBitmap(drawBitmapEnd,width-dwidth1/2,height-height2/2,mPaint);
          }
 
         canvas.restore();
